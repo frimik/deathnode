@@ -22,8 +22,6 @@ type AutoscalingGroupMonitor struct {
 }
 
 const (
-	// LifeCycleTimeout sets the time set for LifeCycleHooks timeout
-	LifeCycleTimeout int64 = 3600
 	// LifeCycleRefreshTimeoutPercentage sets the percentage of LifeCycleTimeout to wait before reset it
 	LifeCycleRefreshTimeoutPercentage = 0.75
 )
@@ -147,7 +145,7 @@ func (a *AutoscalingServiceMonitor) newAutoscalingGroupMonitor(autoscalingGroupP
 	ok, _ := a.ctx.AwsConn.HasLifeCycleHook(autoscalingGroupName)
 	if !ok {
 		log.Infof("Setting lifecyclehook for autoscaling %s", autoscalingGroupName)
-		lifeCycleTimeout := int64(LifeCycleTimeout)
+		lifeCycleTimeout := int64(a.ctx.Conf.LifecycleTimeout)
 		err := a.ctx.AwsConn.PutLifeCycleHook(autoscalingGroupName, &lifeCycleTimeout)
 		if err != nil {
 			log.Warnf("Error putting lifecyclehook to autoscaling %s: %s",
