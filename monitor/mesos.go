@@ -54,18 +54,31 @@ func (m *MesosMonitor) getProtectedFrameworks() map[string]mesos.Framework {
 	protectedFrameworksMap := map[string]mesos.Framework{}
 	response, err := m.ctx.MesosConn.GetMesosFrameworks()
 	if err != nil {
-		log.Warning(err)
+		log.WithField("error", err).Warning("Error getting mesos frameworks")
 		return protectedFrameworksMap
 	}
 
+	if len(response.Frameworks) == 0 {
+		log.Warning("No frameworks found!")
+	}
 	for _, framework := range response.Frameworks {
+		log.Debugf("Found %s framework %s with id: %s.", genFrameworkActiveString(framework.Active), framework.Name, framework.ID)
 		for _, protectedFramework := range m.ctx.Conf.ProtectedFrameworks {
 			if protectedFramework == framework.Name {
+				log.Infof("Found matching protected framework %s with id: %s", framework.Name, framework.ID)
 				protectedFrameworksMap[framework.ID] = framework
 			}
 		}
 	}
 	return protectedFrameworksMap
+}
+
+func genFrameworkActiveString(a bool) string {
+	if a {
+		return "active"
+	} else {
+		return "inactive"
+	}
 }
 
 func (m *MesosMonitor) getSlaves() map[string]mesos.Slave {
@@ -129,7 +142,7 @@ func (m *MesosMonitor) isFromProtectedFramework(task mesos.Task) bool {
 
 	framework, ok := m.mesosCache.frameworks[task.FrameworkID]
 	if ok {
-		log.Debugf("Framework %s is running on node %s, preventing Deathnode for killing it",
+		log.Debugf("Framework %s is running on node %s, preventing Deathnode from killing it",
 			framework.Name, task.SlaveID)
 		return true
 	}
@@ -140,7 +153,7 @@ func (m *MesosMonitor) isFromProtectedFramework(task mesos.Task) bool {
 func (m *MesosMonitor) hasProtectedLabel(task mesos.Task) bool {
 
 	if task.IsProtected {
-		log.Debugf("Protected task %s is running on node %s, preventing Deathnode for killing it",
+		log.Debugf("Protected task %s is running on node %s, preventing Deathnode from killing it",
 			task.Name, task.SlaveID)
 		return true
 	}
