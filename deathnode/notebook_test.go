@@ -194,6 +194,7 @@ func newNotebook(awsConn aws.ClientInterface, mesosConn mesos.ClientInterface, d
 			ProtectedTasksLabels:     []string{"task1"},
 			DelayDeleteSeconds:       delayDeleteSeconds,
 			ResetLifecycle:           true,
+			LifecycleTimeout:         3600,
 		},
 	}
 

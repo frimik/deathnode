@@ -74,6 +74,7 @@ func initFlags(context *context.ApplicationContext) {
 	flag.BoolVar(&context.Conf.ResetLifecycle, "resetLifecycle", false, "Reset lifecycle when it's close to expire.")
 
 	flag.IntVar(&pollingSeconds, "polling", 60, "Seconds between executions.")
+	flag.IntVar(&context.Conf.LifecycleTimeout, "lifecycleTimeout", 3600, "the Terminating:Wait lifecycle timeout period.")
 	flag.IntVar(&context.Conf.DelayDeleteSeconds, "delayDelete", 0, "Time to wait between kill executions (in seconds).")
 
 	flag.Parse()

@@ -15,6 +15,7 @@ type ApplicationConf struct {
 	ProtectedFrameworks      arrayFlags
 	ProtectedTasksLabels     arrayFlags
 	DelayDeleteSeconds       int
+	LifecycleTimeout         int
 	ResetLifecycle           bool
 }
 

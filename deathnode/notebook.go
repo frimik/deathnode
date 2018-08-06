@@ -68,7 +68,7 @@ func (n *Notebook) resetLifecycle(instanceMonitor *monitor.InstanceMonitor) {
 
 	// Check if timeout is close to expire
 	startTimeoutTimestamp := time.Unix(instanceMonitor.TagRemovalTimestamp(), 0)
-	maxSecondsToRefresh := float64(monitor.LifeCycleTimeout) * monitor.LifeCycleRefreshTimeoutPercentage
+	maxSecondsToRefresh := float64(n.ctx.Conf.LifecycleTimeout) * monitor.LifeCycleRefreshTimeoutPercentage
 
 	if instanceMonitor.LifecycleState() == monitor.LifecycleStateTerminatingWait && n.ctx.Clock.Since(startTimeoutTimestamp).Seconds() > maxSecondsToRefresh {
 		err := instanceMonitor.RefreshLifecycleHook()
