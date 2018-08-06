@@ -141,7 +141,7 @@ func (c *Client) getMesosTasksRecursive(tasksResponse *TasksResponse, offset int
 // GetMesosFrameworks returns the registered frameworks in Mesos
 func (c *Client) GetMesosFrameworks() (*FrameworksResponse, error) {
 
-	url := fmt.Sprintf(c.MasterURL + "/master/frameworks")
+	url := fmt.Sprintf(c.MasterURL + "/master/state.json")
 
 	var frameworks FrameworksResponse
 	if err := mesosGetAPICall(url, &frameworks); err != nil {
