@@ -4,11 +4,12 @@ package deathnode
 // they are not running any tasks
 
 import (
+	"time"
+
 	"github.com/alanbover/deathnode/context"
 	"github.com/alanbover/deathnode/monitor"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 // Notebook stores the necessary information for deal with instances that should be deleted

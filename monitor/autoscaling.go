@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"fmt"
+
 	"github.com/alanbover/deathnode/context"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	log "github.com/sirupsen/logrus"

@@ -4,11 +4,12 @@ package monitor
 // With MesosCache we reduce the number of calls to mesos, also we map it for quicker access
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/alanbover/deathnode/context"
 	"github.com/alanbover/deathnode/mesos"
 	log "github.com/sirupsen/logrus"
-	"regexp"
-	"strings"
 )
 
 // MesosMonitor monitors the mesos cluster, creating a cache to reduce the number of calls against it
