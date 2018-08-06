@@ -51,7 +51,7 @@ func NewWatcher(ctx *context.ApplicationContext) *Watcher {
 func (y *Watcher) TagInstancesToBeRemoved(autoscalingMonitor *monitor.AutoscalingGroupMonitor) {
 
 	numUndesiredInstances := autoscalingMonitor.GetNumUndesiredInstances()
-	log.Debugf("Undesired Mesos Agents: %d", numUndesiredInstances)
+	log.WithField("autoscaling_group", autoscalingMonitor.GetAutoscalingGroupName()).Debugf("Undesired Mesos Agents: %d", numUndesiredInstances)
 
 	for removedInstances := 0; removedInstances < numUndesiredInstances; removedInstances++ {
 

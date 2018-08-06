@@ -95,11 +95,11 @@ func enforceFlags(context *context.ApplicationContext) {
 
 	if len(context.Conf.ProtectedFrameworks) < 1 {
 		flag.Usage()
-		log.Fatal("at least one registeredFramework flag is required")
+		log.Fatal("at least one protectedFrameworks flag is required")
 	}
 
 	if len(context.Conf.ConstraintsType) < 1 {
 		flag.Usage()
-		log.Fatal("at least one registeredFramework flag is required")
+		log.Fatal("at least one constraintsType flag is required")
 	}
 }
