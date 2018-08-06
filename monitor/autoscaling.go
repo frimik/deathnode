@@ -161,6 +161,11 @@ func (a *AutoscalingServiceMonitor) newAutoscalingGroupMonitor(autoscalingGroupP
 	a.autoscalingMonitors[autoscalingGroupPrefix][autoscalingGroupName] = autoscalingGroupMonitor
 }
 
+// GetAutoscalingGroupName returns the name of the autoscaling group
+func (a *AutoscalingGroupMonitor) GetAutoscalingGroupName() string {
+	return a.autoscalingGroupName
+}
+
 // GetNumUndesiredInstances return the number of instances to be removed from the AutoscalingGroup
 func (a *AutoscalingGroupMonitor) GetNumUndesiredInstances() int {
 
@@ -242,8 +247,10 @@ func (a *AutoscalingGroupMonitor) enforceInstanceProtection(autoscalingGroup *au
 
 func (a *AutoscalingGroupMonitor) newInstance(instance *autoscaling.Instance) error {
 
-	log.Debugf("Found new instance to monitor in autoscaling %s: %s",
-		a.autoscalingGroupName, *instance.InstanceId)
+	log.WithFields(log.Fields{
+		"autoscaling_group": a.autoscalingGroupName,
+		"instance":          *instance.InstanceId,
+	}).Debugf("Found new instance to monitor")
 
 	instanceMonitor, err := newInstanceMonitor(
 		a.ctx, a.autoscalingGroupName, *instance.InstanceId, *instance.LifecycleState, true)
