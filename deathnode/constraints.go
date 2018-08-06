@@ -19,7 +19,7 @@ func newConstraint(constraint string) (constraint, error) {
 	}(constraint)
 
 	switch constraintType {
-	case "noContraint":
+	case "noConstraint":
 		return &noConstraint{}, nil
 	case "protectedConstraint":
 		return &protectedConstraint{}, nil
