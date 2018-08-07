@@ -44,6 +44,7 @@ func NewMesosMonitor(ctx *context.ApplicationContext) *MesosMonitor {
 // Refresh updates the mesos cache
 func (m *MesosMonitor) Refresh() {
 
+	m.updateLeaderURL()
 	m.mesosCache.tasks = m.getTasks()
 	m.mesosCache.frameworks = m.getProtectedFrameworks()
 	m.mesosCache.slaves = m.getSlaves()
@@ -113,6 +114,16 @@ func (m *MesosMonitor) isTaskProtected(task mesos.Task) bool {
 		}
 	}
 	return false
+}
+
+func (m *MesosMonitor) updateLeaderURL() string {
+
+	leaderURL, err := m.ctx.MesosConn.UpdateMesosLeaderURL()
+	if err != nil {
+		log.WithField("error", err).Error("Failed to get Mesos leader URL.")
+	}
+
+	return leaderURL
 }
 
 func (m *MesosMonitor) getTasks() map[string][]mesos.Task {

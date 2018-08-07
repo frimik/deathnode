@@ -39,6 +39,7 @@ func main() {
 	// Create the Mesos monitor
 	ctx.MesosConn = &mesos.Client{
 		MasterURL: mesosURL,
+		LeaderURL: mesosURL,
 	}
 
 	// Create deathnoteWatcher
