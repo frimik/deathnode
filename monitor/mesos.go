@@ -58,14 +58,27 @@ func (m *MesosMonitor) getProtectedFrameworks() map[string]mesos.Framework {
 		return protectedFrameworksMap
 	}
 
+	if len(response.Frameworks) == 0 {
+		log.Warning("No frameworks found!")
+	}
 	for _, framework := range response.Frameworks {
+		log.Debugf("Found %s framework %s with id: %s.", genFrameworkActiveString(framework.Active), framework.Name, framework.ID)
 		for _, protectedFramework := range m.ctx.Conf.ProtectedFrameworks {
 			if protectedFramework == framework.Name {
+				log.Infof("Found matching protected framework %s with id: %s", framework.Name, framework.ID)
 				protectedFrameworksMap[framework.ID] = framework
 			}
 		}
 	}
 	return protectedFrameworksMap
+}
+
+func genFrameworkActiveString(a bool) string {
+	if a {
+		return "active"
+	} else {
+		return "inactive"
+	}
 }
 
 func (m *MesosMonitor) getSlaves() map[string]mesos.Slave {
