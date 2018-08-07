@@ -2,10 +2,11 @@ package monitor
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/alanbover/deathnode/context"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
-	"strconv"
 )
 
 // LifecycleStateTerminatingWait defines the state of an instance in the autoscalingGroup when it's waiting for
@@ -108,7 +109,7 @@ func (a *InstanceMonitor) IsMarkedToBeRemoved() bool {
 func (a *InstanceMonitor) RefreshLifecycleHook() error {
 
 	// Reset the lifecycle timeout for the instance
-	log.Debugf("Refresh lifecycle hook for instance %s", a.InstanceID())
+	log.Debugf("Refresh lifecycle hook for instance %s", *a.InstanceID())
 	err := a.ctx.AwsConn.RecordLifecycleActionHeartbeat(
 		a.AutoscalingGroupID(), a.InstanceID())
 	if err != nil {
@@ -129,7 +130,7 @@ func (a *InstanceMonitor) setLifecycleState(lifecycleState string) {
 
 	if lifecycleState == LifecycleStateTerminatingWait && a.isProtected {
 		// A non-controled instance went to Terminating:Wait, probably because it went unhealthy
-		log.Debugf("setLifecycleState called for instance %s", a.InstanceID())
+		log.Debugf("setLifecycleState called for instance %s", *a.InstanceID())
 		a.RefreshLifecycleHook()
 	}
 }
