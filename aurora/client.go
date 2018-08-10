@@ -20,8 +20,7 @@ type ClientInterface interface {
 
 // Client implements a client for aurora api
 type Client struct {
-	MasterURL string
-	APIUrl    string // url for the /apibeta path
+	APIUrl string // url for the /apibeta path
 }
 
 // MaintenanceStatusResponse is returned from GetMaintenanceStatus()

@@ -1,18 +1,20 @@
 package main
 
-import "time"
-import "flag"
-
 import (
+	"flag"
+	"time"
+
+	"github.com/alanbover/deathnode/aurora"
 	"github.com/alanbover/deathnode/aws"
 	"github.com/alanbover/deathnode/context"
 	"github.com/alanbover/deathnode/deathnode"
 	"github.com/alanbover/deathnode/mesos"
 	"github.com/benbjohnson/clock"
+
 	log "github.com/sirupsen/logrus"
 )
 
-var accessKey, secretKey, region, iamRole, iamSession, mesosURL, auroraURL string
+var accessKey, secretKey, region, iamRole, iamSession, mesosURL string
 var debug bool
 var pollingSeconds int
 
@@ -42,7 +44,7 @@ func main() {
 	}
 
 	ctx.AuroraConn = &aurora.Client{
-		AuroraURL: auroraURL,
+		APIUrl: ctx.Conf.AuroraURL,
 	}
 
 	// Create deathnoteWatcher
@@ -65,7 +67,7 @@ func initFlags(context *context.ApplicationContext) {
 
 	flag.BoolVar(&debug, "debug", false, "Enable debug logging.")
 	flag.StringVar(&mesosURL, "mesosUrl", "", "The URL for Mesos master.")
-	flag.StringVar(&auroraURL, "auroraUrl", "", "The URL to the Aurora json API (apibeta)")
+	flag.StringVar(&context.Conf.AuroraURL, "auroraUrl", "", "The URL to the Aurora json API (apibeta)")
 
 	flag.Var(&context.Conf.AutoscalingGroupPrefixes, "autoscalingGroupName", "An autoscalingGroup prefix for monitor.")
 	flag.Var(&context.Conf.ProtectedFrameworks, "protectedFrameworks", "The mesos frameworks to wait for kill the node.")

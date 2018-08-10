@@ -18,6 +18,7 @@ type ApplicationConf struct {
 	DelayDeleteSeconds       int
 	LifecycleTimeout         int
 	ResetLifecycle           bool
+	AuroraURL                string
 }
 
 // ApplicationContext stores the application configurations and both AWS and Mesos connections
