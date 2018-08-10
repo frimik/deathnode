@@ -146,6 +146,10 @@ func (m *MesosMonitor) getTasks() map[string][]mesos.Task {
 
 // SetMesosAgentsInMaintenance sets a list of mesos agents in Maintenance mode
 func (m *MesosMonitor) SetMesosAgentsInMaintenance(hosts map[string]string) error {
+	if m.ctx.Conf.AuroraURL != "" {
+		return m.ctx.AuroraConn.StartMaintenance(hosts)
+	}
+
 	return m.ctx.MesosConn.SetHostsInMaintenance(hosts)
 }
 
