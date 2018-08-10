@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var accessKey, secretKey, region, iamRole, iamSession, mesosURL string
+var accessKey, secretKey, region, iamRole, iamSession, mesosURL, auroraURL string
 var debug bool
 var pollingSeconds int
 var lifecycleTimeout int
@@ -42,6 +42,10 @@ func main() {
 		LeaderURL: mesosURL,
 	}
 
+	ctx.AuroraConn = &aurora.Client{
+		AuroraURL: auroraURL,
+	}
+
 	// Create deathnoteWatcher
 	deathNodeWatcher := deathnode.NewWatcher(ctx)
 
@@ -62,6 +66,7 @@ func initFlags(context *context.ApplicationContext) {
 
 	flag.BoolVar(&debug, "debug", false, "Enable debug logging.")
 	flag.StringVar(&mesosURL, "mesosUrl", "", "The URL for Mesos master.")
+	flag.StringVar(&auroraURL, "auroraUrl", "", "The URL to the Aurora json API (apibeta)")
 
 	flag.Var(&context.Conf.AutoscalingGroupPrefixes, "autoscalingGroupName", "An autoscalingGroup prefix for monitor.")
 	flag.Var(&context.Conf.ProtectedFrameworks, "protectedFrameworks", "The mesos frameworks to wait for kill the node.")
