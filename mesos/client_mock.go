@@ -25,6 +25,11 @@ func (c *ClientMock) GetMesosFrameworks() (*FrameworksResponse, error) {
 	return mockResponse.(*FrameworksResponse), nil
 }
 
+// UpdateMesosLeaderURL mocked for testing purposes
+func (c *ClientMock) UpdateMesosLeaderURL() (string, error) {
+	return "http://leader.mesos", nil
+}
+
 // GetMesosAgents mocked for testing purposes
 func (c *ClientMock) GetMesosAgents() (*SlavesResponse, error) {
 	mockResponse, _ := c.replay(&SlavesResponse{}, "GetMesosSlaves")
