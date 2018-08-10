@@ -49,6 +49,17 @@ func (n *Notebook) drainAgents(instance *ec2.Instance) error {
 	return n.mesosMonitor.DrainHosts(hosts)
 }
 
+func (n *Notebook) endMaintenance(instanceMonitor *monitor.InstanceMonitor) error {
+
+	hosts := map[string]string{}
+	hosts[instanceMonitor.IP()] = instanceMonitor.IP()
+	log.WithFields(log.Fields{
+		"instance_id": instanceMonitor.InstanceID(),
+		"ip":          instanceMonitor.IP(),
+	}).Debug("Ending maintenance")
+	return n.ctx.AuroraConn.EndMaintenance(hosts)
+}
+
 func (n *Notebook) shouldWaitForNextDestroy() bool {
 	return n.ctx.Clock.Since(n.lastDeleteTimestamp).Seconds() <= float64(n.ctx.Conf.DelayDeleteSeconds)
 }
@@ -56,6 +67,8 @@ func (n *Notebook) shouldWaitForNextDestroy() bool {
 func (n *Notebook) destroyInstance(instanceMonitor *monitor.InstanceMonitor) error {
 
 	if instanceMonitor.LifecycleState() == monitor.LifecycleStateTerminatingWait {
+		defer n.endMaintenance(instanceMonitor)
+
 		log.Infof("Destroy instance %s", *instanceMonitor.InstanceID())
 		err := n.ctx.AwsConn.CompleteLifecycleAction(
 			instanceMonitor.AutoscalingGroupID(), instanceMonitor.InstanceID())
@@ -117,6 +130,7 @@ func (n *Notebook) destroyInstanceAttempt(instance *ec2.Instance) error {
 			return err
 		}
 	}
+
 	// If the instance can be killed, delete it
 	if !n.mesosMonitor.IsProtected(*instance.PrivateIpAddress) {
 		if err := n.destroyInstance(instanceMonitor); err != nil {
