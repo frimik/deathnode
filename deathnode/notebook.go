@@ -42,6 +42,13 @@ func (n *Notebook) setAgentsInMaintenance(instances []*ec2.Instance) error {
 	return n.mesosMonitor.SetMesosAgentsInMaintenance(hosts)
 }
 
+func (n *Notebook) drainAgents(instance *ec2.Instance) error {
+	hosts := map[string]string{}
+	hosts[*instance.PrivateDnsName] = *instance.PrivateIpAddress
+
+	return n.mesosMonitor.DrainHosts(hosts)
+}
+
 func (n *Notebook) shouldWaitForNextDestroy() bool {
 	return n.ctx.Clock.Since(n.lastDeleteTimestamp).Seconds() <= float64(n.ctx.Conf.DelayDeleteSeconds)
 }
@@ -103,6 +110,13 @@ func (n *Notebook) destroyInstanceAttempt(instance *ec2.Instance) error {
 		return nil
 	}
 
+	// If we're using Aurora - Ensure instance is in DRAIN mode
+	if n.ctx.Conf.AuroraURL != "" {
+		log.Debug("Using Aurora for DRAINING ...")
+		if err := n.drainAgents(instance); err != nil {
+			return err
+		}
+	}
 	// If the instance can be killed, delete it
 	if !n.mesosMonitor.IsProtected(*instance.PrivateIpAddress) {
 		if err := n.destroyInstance(instanceMonitor); err != nil {
