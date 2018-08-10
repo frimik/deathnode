@@ -1,6 +1,7 @@
 package context
 
 import (
+	"github.com/alanbover/deathnode/aurora"
 	"github.com/alanbover/deathnode/aws"
 	"github.com/alanbover/deathnode/mesos"
 	"github.com/benbjohnson/clock"
@@ -21,10 +22,11 @@ type ApplicationConf struct {
 
 // ApplicationContext stores the application configurations and both AWS and Mesos connections
 type ApplicationContext struct {
-	Conf      ApplicationConf
-	AwsConn   aws.ClientInterface
-	MesosConn mesos.ClientInterface
-	Clock     clock.Clock
+	Conf       ApplicationConf
+	AwsConn    aws.ClientInterface
+	MesosConn  mesos.ClientInterface
+	AuroraConn aurora.ClientInterface
+	Clock      clock.Clock
 }
 
 type arrayFlags []string
