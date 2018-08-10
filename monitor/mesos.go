@@ -77,9 +77,9 @@ func (m *MesosMonitor) getProtectedFrameworks() map[string]mesos.Framework {
 func genFrameworkActiveString(a bool) string {
 	if a {
 		return "active"
-	} else {
-		return "inactive"
 	}
+
+	return "inactive"
 }
 
 func (m *MesosMonitor) getSlaves() map[string]mesos.Slave {
