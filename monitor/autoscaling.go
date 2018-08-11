@@ -144,7 +144,7 @@ func (a *AutoscalingServiceMonitor) newAutoscalingGroupMonitor(autoscalingGroupP
 
 	// Set life cycle hook if it's not set already
 	ok, _ := a.ctx.AwsConn.HasLifeCycleHook(autoscalingGroupName)
-	if !ok {
+	if !ok || a.ctx.Conf.ForceLifeCycleHook {
 		log.Infof("Setting lifecyclehook for autoscaling %s", autoscalingGroupName)
 		lifeCycleTimeout := int64(a.ctx.Conf.LifecycleTimeout)
 		err := a.ctx.AwsConn.PutLifeCycleHook(autoscalingGroupName, &lifeCycleTimeout)

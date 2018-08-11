@@ -153,15 +153,6 @@ func (m *MesosMonitor) SetMesosAgentsInMaintenance(hosts map[string]string) erro
 	return m.ctx.MesosConn.SetHostsInMaintenance(hosts)
 }
 
-// DrainHosts sets a list of mesos agents in DRAINING mode. Aurora only.
-func (m *MesosMonitor) DrainHosts(hosts map[string]string) error {
-	if m.ctx.Conf.AuroraURL != "" {
-		return m.ctx.AuroraConn.DrainHosts(hosts)
-	}
-
-	return nil
-}
-
 func (m *MesosMonitor) isFromProtectedFramework(task mesos.Task) bool {
 
 	framework, ok := m.mesosCache.frameworks[task.FrameworkID]

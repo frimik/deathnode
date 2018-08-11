@@ -16,11 +16,12 @@ type ClientInterface interface {
 	StartMaintenance(map[string]string) error
 	EndMaintenance(map[string]string) error
 	DrainHosts(map[string]string) error
+	GetMaintenance() (*MaintenanceResponse, error)
 }
 
 // Client implements a client for aurora api
 type Client struct {
-	APIUrl string // url for the /apibeta path
+	AuroraURL string // url for the /apibeta path
 }
 
 // MaintenanceStatusResponse is returned from GetMaintenanceStatus()
@@ -179,28 +180,63 @@ type MaintenanceRequest struct {
 	MaintenanceHosts MaintenanceHostNames `json:"hosts"`
 }
 
-// MaintenanceHostNames implements the payload for each host in the Aurora MaintenanceRequest API cal
+// MaintenanceHostNames implements the payload for each host in the Aurora MaintenanceRequest API call
 type MaintenanceHostNames struct {
 	HostNames []string `json:"hostNames"`
 }
 
+// MaintenanceResponse describes the response returned from the /maintenance URL
+/*
+{
+    "DRAINING": {
+        "10.19.64.227": [
+            "1534023102498-sparta-test-mesos-stress-0-6db57c76-9863-42d1-8fda-232eea4a6ba2"
+            ]
+        },
+    "DRAINED": [
+        "10.19.64.30"
+    ],
+    "SCHEDULED": [
+
+    ]
+}
+*/
+type MaintenanceResponse struct {
+	Draining  map[string]string `json:"DRAINING"`
+	Drained   []string          `json:"DRAINED"`
+	Scheduled []string          `json:"SCHEDULED"`
+}
+
+// GetMaintenance returns the Aurora `/maintenance info
+func (c *Client) GetMaintenance() (*MaintenanceResponse, error) {
+
+	url := fmt.Sprintf(c.AuroraURL + "/maintenance")
+
+	var maintenance MaintenanceResponse
+	if err := auroraGetAPICall(url, &maintenance); err != nil {
+		return nil, err
+	}
+
+	return &maintenance, nil
+}
+
 // StartMaintenance puts nodes in maintenance mode via the Aurora API
 func (c *Client) StartMaintenance(hosts map[string]string) error {
-	url := fmt.Sprintf(c.APIUrl + "/startMaintenance")
+	url := fmt.Sprintf(c.AuroraURL + "/apibeta/startMaintenance")
 	payload := genMaintenanceCallPayload(hosts)
 	return auroraPostAPICall(url, payload)
 }
 
 // EndMaintenance takes node out of maintenance mode via the Aurora API
 func (c *Client) EndMaintenance(hosts map[string]string) error {
-	url := fmt.Sprintf(c.APIUrl + "/endMaintenance")
+	url := fmt.Sprintf(c.AuroraURL + "/apibeta/endMaintenance")
 	payload := genMaintenanceCallPayload(hosts)
 	return auroraPostAPICall(url, payload)
 }
 
 // DrainHosts puts nodes into DRAINNG state via the Aurora API
 func (c *Client) DrainHosts(hosts map[string]string) error {
-	url := fmt.Sprintf(c.APIUrl + "/drainHosts")
+	url := fmt.Sprintf(c.AuroraURL + "/apibeta/drainHosts")
 	payload := genMaintenanceCallPayload(hosts)
 	return auroraPostAPICall(url, payload)
 }
@@ -218,6 +254,31 @@ func genMaintenanceCallPayload(hosts map[string]string) []byte {
 
 	template, _ := json.Marshal(maintenanceRequest)
 	return template
+}
+
+func auroraGetAPICall(url string, response interface{}) error {
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Print("Error preparing HTTP request: ", err)
+		return err
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Print("Error calling HTTP request: ", err)
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		fmt.Print("Error decoding HTTP request: ", err)
+		return err
+	}
+
+	return nil
 }
 
 func auroraPostAPICall(url string, payload []byte) error {
