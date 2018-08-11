@@ -15,6 +15,7 @@ import (
 // Notebook stores the necessary information for deal with instances that should be deleted
 type Notebook struct {
 	mesosMonitor        *monitor.MesosMonitor
+	auroraMonitor       *monitor.AuroraMonitor
 	autoscalingGroups   *monitor.AutoscalingServiceMonitor
 	lastDeleteTimestamp time.Time
 	ctx                 *context.ApplicationContext
@@ -22,10 +23,11 @@ type Notebook struct {
 
 // NewNotebook creates a notebook object, which is in charge of monitoring and delete instances marked to be deleted
 func NewNotebook(ctx *context.ApplicationContext, autoscalingGroups *monitor.AutoscalingServiceMonitor,
-	mesosMonitor *monitor.MesosMonitor) *Notebook {
+	mesosMonitor *monitor.MesosMonitor, auroraMonitor *monitor.AuroraMonitor) *Notebook {
 
 	return &Notebook{
 		mesosMonitor:        mesosMonitor,
+		auroraMonitor:       auroraMonitor,
 		autoscalingGroups:   autoscalingGroups,
 		lastDeleteTimestamp: time.Time{},
 		ctx:                 ctx,
@@ -39,14 +41,22 @@ func (n *Notebook) setAgentsInMaintenance(instances []*ec2.Instance) error {
 		hosts[*instance.PrivateDnsName] = *instance.PrivateIpAddress
 	}
 
+	log.WithFields(log.Fields{
+		"hosts": hosts,
+	}).Info("Starting Mesos agent maintenance")
+
 	return n.mesosMonitor.SetMesosAgentsInMaintenance(hosts)
 }
 
-func (n *Notebook) drainAgents(instance *ec2.Instance) error {
+func (n *Notebook) drainAgent(instance *ec2.Instance) error {
 	hosts := map[string]string{}
 	hosts[*instance.PrivateDnsName] = *instance.PrivateIpAddress
 
-	return n.mesosMonitor.DrainHosts(hosts)
+	log.WithFields(log.Fields{
+		"instance_id": *instance.InstanceId,
+		"ip":          *instance.PrivateIpAddress,
+	}).Info("Draining Mesos agent")
+	return n.auroraMonitor.DrainHosts(hosts)
 }
 
 func (n *Notebook) endMaintenance(instanceMonitor *monitor.InstanceMonitor) error {
@@ -54,9 +64,9 @@ func (n *Notebook) endMaintenance(instanceMonitor *monitor.InstanceMonitor) erro
 	hosts := map[string]string{}
 	hosts[instanceMonitor.IP()] = instanceMonitor.IP()
 	log.WithFields(log.Fields{
-		"instance_id": instanceMonitor.InstanceID(),
+		"instance_id": *instanceMonitor.InstanceID(),
 		"ip":          instanceMonitor.IP(),
-	}).Debug("Ending maintenance")
+	}).Info("Ending Mesos agent maintenance")
 	return n.ctx.AuroraConn.EndMaintenance(hosts)
 }
 
@@ -123,10 +133,9 @@ func (n *Notebook) destroyInstanceAttempt(instance *ec2.Instance) error {
 		return nil
 	}
 
-	// If we're using Aurora - Ensure instance is in DRAIN mode
+	// If we're using Aurora - Ensure instance is DRAINING
 	if n.ctx.Conf.AuroraURL != "" {
-		log.Debug("Using Aurora for DRAINING ...")
-		if err := n.drainAgents(instance); err != nil {
+		if err := n.drainAgent(instance); err != nil {
 			return err
 		}
 	}
@@ -153,12 +162,14 @@ func (n *Notebook) DestroyInstancesAttempt() error {
 		return err
 	}
 
-	// Set instances in maintenance
-	n.setAgentsInMaintenance(instances)
+	if len(instances) > 0 {
+		// Set instances in maintenance
+		n.setAgentsInMaintenance(instances)
 
-	for _, instance := range instances {
-		if err := n.destroyInstanceAttempt(instance); err != nil {
-			log.Warn(err)
+		for _, instance := range instances {
+			if err := n.destroyInstanceAttempt(instance); err != nil {
+				log.Warn(err)
+			}
 		}
 	}
 

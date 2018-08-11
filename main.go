@@ -44,7 +44,7 @@ func main() {
 	}
 
 	ctx.AuroraConn = &aurora.Client{
-		APIUrl: ctx.Conf.AuroraURL,
+		AuroraURL: ctx.Conf.AuroraURL,
 	}
 
 	// Create deathnoteWatcher
@@ -83,6 +83,7 @@ func initFlags(context *context.ApplicationContext) {
 
 	flag.IntVar(&pollingSeconds, "polling", 60, "Seconds between executions.")
 	flag.IntVar(&context.Conf.LifecycleTimeout, "lifecycleTimeout", 3600, "the Terminating:Wait lifecycle timeout period.")
+	flag.BoolVar(&context.Conf.ForceLifeCycleHook, "forceLifecycleHook", false, "force (overwrite) all lifecycle hooks (ensures they match desired timeouts)")
 	flag.IntVar(&context.Conf.DelayDeleteSeconds, "delayDelete", 0, "Time to wait between kill executions (in seconds).")
 
 	flag.Parse()

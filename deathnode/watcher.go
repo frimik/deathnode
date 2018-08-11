@@ -12,6 +12,7 @@ import (
 type Watcher struct {
 	notebook                  *Notebook
 	mesosMonitor              *monitor.MesosMonitor
+	auroraMonitor             *monitor.AuroraMonitor
 	autoscalingServiceMonitor *monitor.AutoscalingServiceMonitor
 	constraints               []constraint
 	recommender               recommender
@@ -22,6 +23,7 @@ func NewWatcher(ctx *context.ApplicationContext) *Watcher {
 
 	autoscalingServiceMonitor := monitor.NewAutoscalingServiceMonitor(ctx)
 	mesosMonitor := monitor.NewMesosMonitor(ctx)
+	auroraMonitor := monitor.NewAuroraMonitor(ctx)
 
 	constraints := []constraint{}
 	for _, constraint := range ctx.Conf.ConstraintsType {
@@ -38,8 +40,9 @@ func NewWatcher(ctx *context.ApplicationContext) *Watcher {
 	}
 
 	return &Watcher{
-		notebook:                  NewNotebook(ctx, autoscalingServiceMonitor, mesosMonitor),
+		notebook:                  NewNotebook(ctx, autoscalingServiceMonitor, mesosMonitor, auroraMonitor),
 		mesosMonitor:              mesosMonitor,
+		auroraMonitor:             auroraMonitor,
 		constraints:               constraints,
 		recommender:               recommender,
 		autoscalingServiceMonitor: autoscalingServiceMonitor,
@@ -85,6 +88,7 @@ func (y *Watcher) Run() {
 	log.Debug("New check triggered")
 
 	y.autoscalingServiceMonitor.Refresh()
+	y.auroraMonitor.Refresh()
 	y.mesosMonitor.Refresh()
 
 	for _, autoscalingGroup := range y.autoscalingServiceMonitor.GetAutoscalingGroupMonitorsList() {
