@@ -193,7 +193,7 @@ func (c *Client) StartMaintenance(hosts map[string]string) error {
 
 // EndMaintenance takes node out of maintenance mode via the Aurora API
 func (c *Client) EndMaintenance(hosts map[string]string) error {
-	url := fmt.Sprintf(c.APIUrl + "/drainHosts")
+	url := fmt.Sprintf(c.APIUrl + "/endMaintenance")
 	payload := genMaintenanceCallPayload(hosts)
 	return auroraPostAPICall(url, payload)
 }
