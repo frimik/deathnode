@@ -54,11 +54,18 @@ func (a *AuroraMonitor) getMaintenance() aurora.MaintenanceResponse {
 
 // DrainHosts sets a list of mesos agents in DRAINING mode.
 func (a *AuroraMonitor) DrainHosts(hosts map[string]string) error {
+
+	drainHosts := make(map[string]string)
+	for dnsName, ip := range hosts {
+		if !a.IsDrained(ip) || !a.IsDraining(ip) {
+			drainHosts[dnsName] = ip
+		}
+	}
 	log.WithFields(log.Fields{
-		"hosts": hosts,
+		"hosts": drainHosts,
 	}).Info("Draining...")
 
-	return a.ctx.AuroraConn.DrainHosts(hosts)
+	return a.ctx.AuroraConn.DrainHosts(drainHosts)
 }
 
 // StartMaintenance places list of mesos agents in MAINTENANCE mode.
