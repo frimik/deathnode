@@ -45,10 +45,15 @@ func (n *Notebook) setAgentsInMaintenance(instances []*ec2.Instance) error {
 		"hosts": hosts,
 	}).Info("Starting Mesos agent maintenance")
 
+	if n.ctx.Conf.AuroraURL != "" {
+		return n.auroraMonitor.StartMaintenance(hosts)
+	}
+
 	return n.mesosMonitor.SetMesosAgentsInMaintenance(hosts)
 }
 
 func (n *Notebook) drainAgent(instance *ec2.Instance) error {
+
 	hosts := map[string]string{}
 	hosts[*instance.PrivateDnsName] = *instance.PrivateIpAddress
 
@@ -56,6 +61,7 @@ func (n *Notebook) drainAgent(instance *ec2.Instance) error {
 		"instance_id": *instance.InstanceId,
 		"ip":          *instance.PrivateIpAddress,
 	}).Info("Draining Mesos agent")
+
 	return n.auroraMonitor.DrainHosts(hosts)
 }
 
@@ -63,14 +69,17 @@ func (n *Notebook) endMaintenance(instanceMonitor *monitor.InstanceMonitor) erro
 
 	hosts := map[string]string{}
 	hosts[instanceMonitor.IP()] = instanceMonitor.IP()
+
 	log.WithFields(log.Fields{
 		"instance_id": *instanceMonitor.InstanceID(),
 		"ip":          instanceMonitor.IP(),
 	}).Info("Ending Mesos agent maintenance")
-	return n.ctx.AuroraConn.EndMaintenance(hosts)
+
+	return n.auroraMonitor.EndMaintenance(hosts)
 }
 
 func (n *Notebook) shouldWaitForNextDestroy() bool {
+
 	return n.ctx.Clock.Since(n.lastDeleteTimestamp).Seconds() <= float64(n.ctx.Conf.DelayDeleteSeconds)
 }
 
