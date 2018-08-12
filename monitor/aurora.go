@@ -52,11 +52,72 @@ func (a *AuroraMonitor) getMaintenance() aurora.MaintenanceResponse {
 
 }
 
-// DrainHosts sets a list of mesos agents in DRAINING mode. Aurora only.
+// DrainHosts sets a list of mesos agents in DRAINING mode.
 func (a *AuroraMonitor) DrainHosts(hosts map[string]string) error {
 	log.WithFields(log.Fields{
 		"hosts": hosts,
 	}).Info("Draining...")
 
 	return a.ctx.AuroraConn.DrainHosts(hosts)
+}
+
+// StartMaintenance places list of mesos agents in MAINTENANCE mode.
+func (a *AuroraMonitor) StartMaintenance(hosts map[string]string) error {
+
+	maintenanceHosts := make(map[string]string)
+	for dnsName, ip := range hosts {
+		if !a.IsDrained(ip) || !a.IsDraining(ip) {
+			maintenanceHosts[dnsName] = ip
+		}
+	}
+	log.WithFields(log.Fields{
+		"hosts": maintenanceHosts,
+	}).Info("Starting Maintenance...")
+	return a.ctx.AuroraConn.StartMaintenance(maintenanceHosts)
+}
+
+// EndMaintenance takes mesos agents out of (MAINTENANCE|DRAINING|DRAINED) modes
+func (a *AuroraMonitor) EndMaintenance(hosts map[string]string) error {
+	log.WithFields(log.Fields{
+		"hosts": hosts,
+	}).Info("Ending Maintenance...")
+	return a.ctx.AuroraConn.EndMaintenance(hosts)
+}
+
+// IsDraining returns true if host is in DRAINING maintenance mode.
+func (a *AuroraMonitor) IsDraining(host string) bool {
+
+	host, ok := a.auroraCache.maintenance.Draining[host]
+	if ok {
+		log.Debugf("Host %s is DRAINING", host)
+		return true
+	}
+
+	return false
+}
+
+// IsDrained returns true if host is in DRAINED maintenance mode.
+func (a *AuroraMonitor) IsDrained(host string) bool {
+
+	for _, h := range a.auroraCache.maintenance.Drained {
+		if h == host {
+			log.Debugf("Host %s is DRAINED", host)
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsScheduled returns true if host is in SCHEDULED maintenance mode.
+func (a *AuroraMonitor) isScheduled(host string) bool {
+
+	for _, h := range a.auroraCache.maintenance.Scheduled {
+		if h == host {
+			log.Debugf("Host %s is SCHEDULED", host)
+			return true
+		}
+	}
+
+	return false
 }

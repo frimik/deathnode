@@ -88,8 +88,8 @@ func (y *Watcher) Run() {
 	log.Debug("New check triggered")
 
 	y.autoscalingServiceMonitor.Refresh()
-	y.auroraMonitor.Refresh()
 	y.mesosMonitor.Refresh()
+	y.auroraMonitor.Refresh()
 
 	for _, autoscalingGroup := range y.autoscalingServiceMonitor.GetAutoscalingGroupMonitorsList() {
 		y.TagInstancesToBeRemoved(autoscalingGroup)
