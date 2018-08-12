@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // ClientInterface is an interface for mesos api clients
@@ -14,12 +17,14 @@ type ClientInterface interface {
 	GetMesosTasks() (*TasksResponse, error)
 	GetMesosFrameworks() (*FrameworksResponse, error)
 	GetMesosAgents() (*SlavesResponse, error)
+	UpdateMesosLeaderURL() (string, error)
 	SetHostsInMaintenance(map[string]string) error
 }
 
 // Client implements a client for mesos api
 type Client struct {
 	MasterURL string
+	LeaderURL string
 }
 
 // SlavesResponse is part of the mesos slaves response API endpoint
@@ -104,9 +109,47 @@ type MaintenanceStart struct {
 // SetHostsInMaintenance configures nodes in maintenance for Mesos cluster
 func (c *Client) SetHostsInMaintenance(hosts map[string]string) error {
 
-	url := fmt.Sprintf(c.MasterURL + "/maintenance/schedule")
+	url := fmt.Sprintf(c.LeaderURL + "/maintenance/schedule")
 	payload := genMaintenanceCallPayload(hosts)
 	return mesosPostAPICall(url, payload)
+}
+
+// UpdateMesosLeaderURL updates the URL to the currently leading Mesos Master
+func (c *Client) UpdateMesosLeaderURL() (string, error) {
+	u := fmt.Sprintf("%s/master/redirect", c.MasterURL)
+
+	uParsed, err := url.Parse(u)
+	if err != nil {
+		log.WithField("error", err).Errorf("Unable to parse Master redirect URL: %s. Returning c.MasterURL", u)
+		return c.MasterURL, nil
+	}
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	resp, err := client.Get(u)
+	if err != nil {
+		return "", err
+	}
+
+	leaderURL := resp.Header.Get("Location")
+	log.Debugf("Mesos Master leaderURL is %s", leaderURL)
+
+	lParsed, err := url.Parse(leaderURL)
+	if err != nil {
+		log.Fatal("Error parsing leaderURL")
+	}
+
+	if lParsed.Scheme == "" {
+		lParsed.Scheme = uParsed.Scheme
+	}
+
+	c.LeaderURL = lParsed.String()
+	log.Infof("Using leader: %s", c.LeaderURL)
+	return c.LeaderURL, nil
 }
 
 // GetMesosTasks return the running tasks on the Mesos cluster
@@ -122,7 +165,7 @@ func (c *Client) GetMesosTasks() (*TasksResponse, error) {
 
 func (c *Client) getMesosTasksRecursive(tasksResponse *TasksResponse, offset int) error {
 
-	url := fmt.Sprintf("%s/master/tasks?limit=100&offset=%d", c.MasterURL, offset)
+	url := fmt.Sprintf("%s/master/tasks?limit=100&offset=%d", c.LeaderURL, offset)
 
 	var tasks TasksResponse
 	if err := mesosGetAPICall(url, &tasks); err != nil {
@@ -141,7 +184,7 @@ func (c *Client) getMesosTasksRecursive(tasksResponse *TasksResponse, offset int
 // GetMesosFrameworks returns the registered frameworks in Mesos
 func (c *Client) GetMesosFrameworks() (*FrameworksResponse, error) {
 
-	url := fmt.Sprintf(c.MasterURL + "/master/frameworks")
+	url := fmt.Sprintf(c.LeaderURL + "/master/state.json")
 
 	var frameworks FrameworksResponse
 	if err := mesosGetAPICall(url, &frameworks); err != nil {
@@ -154,7 +197,7 @@ func (c *Client) GetMesosFrameworks() (*FrameworksResponse, error) {
 // GetMesosAgents returns the Mesos Agents registered in the Mesos cluster
 func (c *Client) GetMesosAgents() (*SlavesResponse, error) {
 
-	url := fmt.Sprintf(c.MasterURL + "/master/slaves")
+	url := fmt.Sprintf(c.LeaderURL + "/master/slaves")
 
 	var slaves SlavesResponse
 	if err := mesosGetAPICall(url, &slaves); err != nil {

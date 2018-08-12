@@ -1,20 +1,23 @@
 package main
 
-import "time"
-import "flag"
-
 import (
+	"flag"
+	"time"
+
+	"github.com/alanbover/deathnode/aurora"
 	"github.com/alanbover/deathnode/aws"
 	"github.com/alanbover/deathnode/context"
 	"github.com/alanbover/deathnode/deathnode"
 	"github.com/alanbover/deathnode/mesos"
 	"github.com/benbjohnson/clock"
+
 	log "github.com/sirupsen/logrus"
 )
 
 var accessKey, secretKey, region, iamRole, iamSession, mesosURL string
 var debug bool
 var pollingSeconds int
+var lifecycleTimeout int
 
 func main() {
 
@@ -38,6 +41,11 @@ func main() {
 	// Create the Mesos monitor
 	ctx.MesosConn = &mesos.Client{
 		MasterURL: mesosURL,
+		LeaderURL: mesosURL,
+	}
+
+	ctx.AuroraConn = &aurora.Client{
+		AuroraURL: ctx.Conf.AuroraURL,
 	}
 
 	// Create deathnoteWatcher
@@ -60,6 +68,7 @@ func initFlags(context *context.ApplicationContext) {
 
 	flag.BoolVar(&debug, "debug", false, "Enable debug logging.")
 	flag.StringVar(&mesosURL, "mesosUrl", "", "The URL for Mesos master.")
+	flag.StringVar(&context.Conf.AuroraURL, "auroraUrl", "", "The URL to the Aurora json API (apibeta)")
 
 	flag.Var(&context.Conf.AutoscalingGroupPrefixes, "autoscalingGroupName", "An autoscalingGroup prefix for monitor.")
 	flag.Var(&context.Conf.ProtectedFrameworks, "protectedFrameworks", "The mesos frameworks to wait for kill the node.")
@@ -74,6 +83,8 @@ func initFlags(context *context.ApplicationContext) {
 	flag.BoolVar(&context.Conf.ResetLifecycle, "resetLifecycle", false, "Reset lifecycle when it's close to expire.")
 
 	flag.IntVar(&pollingSeconds, "polling", 60, "Seconds between executions.")
+	flag.IntVar(&context.Conf.LifecycleTimeout, "lifecycleTimeout", 3600, "the Terminating:Wait lifecycle timeout period.")
+	flag.BoolVar(&context.Conf.ForceLifeCycleHook, "forceLifecycleHook", false, "force (overwrite) all lifecycle hooks (ensures they match desired timeouts)")
 	flag.IntVar(&context.Conf.DelayDeleteSeconds, "delayDelete", 0, "Time to wait between kill executions (in seconds).")
 
 	flag.Parse()
@@ -93,11 +104,11 @@ func enforceFlags(context *context.ApplicationContext) {
 
 	if len(context.Conf.ProtectedFrameworks) < 1 {
 		flag.Usage()
-		log.Fatal("at least one registeredFramework flag is required")
+		log.Fatal("at least one protectedFrameworks flag is required")
 	}
 
 	if len(context.Conf.ConstraintsType) < 1 {
 		flag.Usage()
-		log.Fatal("at least one registeredFramework flag is required")
+		log.Fatal("at least one constraintsType flag is required")
 	}
 }
