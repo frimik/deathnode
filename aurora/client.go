@@ -202,9 +202,9 @@ type MaintenanceHostNames struct {
 }
 */
 type MaintenanceResponse struct {
-	Draining  map[string]string `json:"DRAINING"`
-	Drained   []string          `json:"DRAINED"`
-	Scheduled []string          `json:"SCHEDULED"`
+	Draining  map[string][]string `json:"DRAINING"`
+	Drained   []string            `json:"DRAINED"`
+	Scheduled []string            `json:"SCHEDULED"`
 }
 
 // GetMaintenance returns the Aurora `/maintenance info
