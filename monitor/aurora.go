@@ -73,7 +73,8 @@ func (a *AuroraMonitor) StartMaintenance(hosts map[string]string) error {
 
 	maintenanceHosts := make(map[string]string)
 	for dnsName, ip := range hosts {
-		if !a.IsDrained(ip) || !a.IsDraining(ip) {
+		// Nodes which are already in DRAINING|DRAINED|SCHEDULED should not be acted on
+		if !a.IsDrained(ip) || !a.IsDraining(ip) || !a.isScheduled(ip) {
 			maintenanceHosts[dnsName] = ip
 		}
 	}
@@ -92,11 +93,11 @@ func (a *AuroraMonitor) EndMaintenance(hosts map[string]string) error {
 }
 
 // IsDraining returns true if host is in DRAINING maintenance mode.
-func (a *AuroraMonitor) IsDraining(host string) bool {
+func (a *AuroraMonitor) IsDraining(ipAddress string) bool {
 
-	host, ok := a.auroraCache.maintenance.Draining[host]
+	ipAddress, ok := a.auroraCache.maintenance.Draining[ipAddress]
 	if ok {
-		log.Debugf("Host %s is DRAINING", host)
+		log.Debugf("Host %s is DRAINING", ipAddress)
 		return true
 	}
 
@@ -104,11 +105,11 @@ func (a *AuroraMonitor) IsDraining(host string) bool {
 }
 
 // IsDrained returns true if host is in DRAINED maintenance mode.
-func (a *AuroraMonitor) IsDrained(host string) bool {
+func (a *AuroraMonitor) IsDrained(ipAddress string) bool {
 
 	for _, h := range a.auroraCache.maintenance.Drained {
-		if h == host {
-			log.Debugf("Host %s is DRAINED", host)
+		if h == ipAddress {
+			log.Debugf("Host %s is DRAINED", ipAddress)
 			return true
 		}
 	}
