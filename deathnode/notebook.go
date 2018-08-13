@@ -41,10 +41,6 @@ func (n *Notebook) setAgentsInMaintenance(instances []*ec2.Instance) error {
 		hosts[*instance.PrivateDnsName] = *instance.PrivateIpAddress
 	}
 
-	log.WithFields(log.Fields{
-		"hosts": hosts,
-	}).Info("Starting Mesos agent maintenance")
-
 	if n.ctx.Conf.AuroraURL != "" {
 		return n.auroraMonitor.StartMaintenance(hosts)
 	}
@@ -86,6 +82,8 @@ func (n *Notebook) shouldWaitForNextDestroy() bool {
 func (n *Notebook) destroyInstance(instanceMonitor *monitor.InstanceMonitor) error {
 
 	if instanceMonitor.LifecycleState() == monitor.LifecycleStateTerminatingWait {
+		// ensure we end maintenance for this instance after it's been destroyed.
+		// TODO generalize it so it chooses Mesos/Aurora like SetAgentsInMaintenance() does.
 		defer n.endMaintenance(instanceMonitor)
 
 		log.Infof("Destroy instance %s", *instanceMonitor.InstanceID())
@@ -142,14 +140,25 @@ func (n *Notebook) destroyInstanceAttempt(instance *ec2.Instance) error {
 		return nil
 	}
 
-	// If we're using Aurora - Ensure instance is DRAINING
+	// If we're using Aurora
 	if n.ctx.Conf.AuroraURL != "" {
+
+		// Place instance into DRAINING mode
 		if err := n.drainAgent(instance); err != nil {
 			return err
 		}
+
+		// If the instance can be killed, delete it
+		if n.auroraMonitor.IsDrained(*instance.PrivateIpAddress) {
+			if err := n.destroyInstance(instanceMonitor); err != nil {
+				return err
+			}
+
+			return nil
+		}
+
 	}
 
-	// If the instance can be killed, delete it
 	if !n.mesosMonitor.IsProtected(*instance.PrivateIpAddress) {
 		if err := n.destroyInstance(instanceMonitor); err != nil {
 			return err
@@ -171,14 +180,12 @@ func (n *Notebook) DestroyInstancesAttempt() error {
 		return err
 	}
 
-	if len(instances) > 0 {
-		// Set instances in maintenance
-		n.setAgentsInMaintenance(instances)
+	// Set instances in maintenance
+	n.setAgentsInMaintenance(instances)
 
-		for _, instance := range instances {
-			if err := n.destroyInstanceAttempt(instance); err != nil {
-				log.Warn(err)
-			}
+	for _, instance := range instances {
+		if err := n.destroyInstanceAttempt(instance); err != nil {
+			log.Warn(err)
 		}
 	}
 
