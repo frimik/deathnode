@@ -89,7 +89,7 @@ func (a *AuroraMonitor) StartMaintenance(hosts map[string]string) error {
 func (a *AuroraMonitor) EndMaintenance(hosts map[string]string) error {
 	log.WithFields(log.Fields{
 		"hosts": hosts,
-	}).Info("Ending Maintenance...")
+	}).Debug("Ending Maintenance...")
 	return a.ctx.AuroraConn.EndMaintenance(hosts)
 }
 
