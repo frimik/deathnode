@@ -16,6 +16,7 @@ type Watcher struct {
 	autoscalingServiceMonitor *monitor.AutoscalingServiceMonitor
 	constraints               []constraint
 	recommender               recommender
+	ctx                       *context.ApplicationContext
 }
 
 // NewWatcher returns a new Watcher object
@@ -46,6 +47,7 @@ func NewWatcher(ctx *context.ApplicationContext) *Watcher {
 		constraints:               constraints,
 		recommender:               recommender,
 		autoscalingServiceMonitor: autoscalingServiceMonitor,
+		ctx: ctx,
 	}
 }
 
@@ -89,7 +91,9 @@ func (y *Watcher) Run() {
 
 	y.autoscalingServiceMonitor.Refresh()
 	y.mesosMonitor.Refresh()
-	y.auroraMonitor.Refresh()
+	if y.ctx.Conf.AuroraURL != "" {
+		y.auroraMonitor.Refresh()
+	}
 
 	for _, autoscalingGroup := range y.autoscalingServiceMonitor.GetAutoscalingGroupMonitorsList() {
 		y.TagInstancesToBeRemoved(autoscalingGroup)
