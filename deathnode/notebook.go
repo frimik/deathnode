@@ -84,7 +84,9 @@ func (n *Notebook) destroyInstance(instanceMonitor *monitor.InstanceMonitor) err
 	if instanceMonitor.LifecycleState() == monitor.LifecycleStateTerminatingWait {
 		// ensure we end maintenance for this instance after it's been destroyed.
 		// TODO generalize it so it chooses Mesos/Aurora like SetAgentsInMaintenance() does.
-		defer n.endMaintenance(instanceMonitor)
+		if n.ctx.Conf.AuroraURL != "" {
+			defer n.endMaintenance(instanceMonitor)
+		}
 
 		log.Infof("Destroy instance %s", *instanceMonitor.InstanceID())
 		err := n.ctx.AwsConn.CompleteLifecycleAction(
