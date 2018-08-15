@@ -4,8 +4,9 @@ package deathnode
 
 import (
 	"fmt"
-	"github.com/alanbover/deathnode/monitor"
 	"strings"
+
+	"github.com/alanbover/deathnode/monitor"
 )
 
 func newConstraint(constraint string) (constraint, error) {
@@ -19,7 +20,7 @@ func newConstraint(constraint string) (constraint, error) {
 	}(constraint)
 
 	switch constraintType {
-	case "noContraint":
+	case "noConstraint":
 		return &noConstraint{}, nil
 	case "protectedConstraint":
 		return &protectedConstraint{}, nil

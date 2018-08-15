@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"fmt"
+
 	"github.com/alanbover/deathnode/context"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	log "github.com/sirupsen/logrus"
@@ -22,8 +23,6 @@ type AutoscalingGroupMonitor struct {
 }
 
 const (
-	// LifeCycleTimeout sets the time set for LifeCycleHooks timeout
-	LifeCycleTimeout int64 = 3600
 	// LifeCycleRefreshTimeoutPercentage sets the percentage of LifeCycleTimeout to wait before reset it
 	LifeCycleRefreshTimeoutPercentage = 0.75
 )
@@ -145,9 +144,9 @@ func (a *AutoscalingServiceMonitor) newAutoscalingGroupMonitor(autoscalingGroupP
 
 	// Set life cycle hook if it's not set already
 	ok, _ := a.ctx.AwsConn.HasLifeCycleHook(autoscalingGroupName)
-	if !ok {
+	if !ok || a.ctx.Conf.ForceLifeCycleHook {
 		log.Infof("Setting lifecyclehook for autoscaling %s", autoscalingGroupName)
-		lifeCycleTimeout := int64(LifeCycleTimeout)
+		lifeCycleTimeout := int64(a.ctx.Conf.LifecycleTimeout)
 		err := a.ctx.AwsConn.PutLifeCycleHook(autoscalingGroupName, &lifeCycleTimeout)
 		if err != nil {
 			log.Warnf("Error putting lifecyclehook to autoscaling %s: %s",
@@ -160,6 +159,11 @@ func (a *AutoscalingServiceMonitor) newAutoscalingGroupMonitor(autoscalingGroupP
 	}
 
 	a.autoscalingMonitors[autoscalingGroupPrefix][autoscalingGroupName] = autoscalingGroupMonitor
+}
+
+// GetAutoscalingGroupName returns the name of the autoscaling group
+func (a *AutoscalingGroupMonitor) GetAutoscalingGroupName() string {
+	return a.autoscalingGroupName
 }
 
 // GetNumUndesiredInstances return the number of instances to be removed from the AutoscalingGroup
@@ -243,8 +247,10 @@ func (a *AutoscalingGroupMonitor) enforceInstanceProtection(autoscalingGroup *au
 
 func (a *AutoscalingGroupMonitor) newInstance(instance *autoscaling.Instance) error {
 
-	log.Debugf("Found new instance to monitor in autoscaling %s: %s",
-		a.autoscalingGroupName, *instance.InstanceId)
+	log.WithFields(log.Fields{
+		"autoscaling_group": a.autoscalingGroupName,
+		"instance":          *instance.InstanceId,
+	}).Debugf("Found new instance to monitor")
 
 	instanceMonitor, err := newInstanceMonitor(
 		a.ctx, a.autoscalingGroupName, *instance.InstanceId, *instance.LifecycleState, true)

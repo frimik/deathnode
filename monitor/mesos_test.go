@@ -3,10 +3,11 @@ package monitor
 import (
 	"encoding/json"
 	"fmt"
+	"testing"
+
 	"github.com/alanbover/deathnode/context"
 	"github.com/alanbover/deathnode/mesos"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestGetMesosFrameworks(t *testing.T) {

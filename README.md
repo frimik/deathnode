@@ -34,7 +34,7 @@ Here you can find an example of usage:
 ### Constraints
 When removing an instance, contraints are used by deathnode to filter which instances are not able to be picked up as candidates (best efford). Multiple contraints can be specified.
 
-* noContraint: Applies no constraints
+* noConstraint: Applies no constraints
 * protectedConstraint: Do not pick instances that has tasks from protected frameworks
 * filterFrameworkConstraint: Do not pick instances that has tasks from the specified framework
 * taskNameRegexpConstraint: Do not pick instances that has tasks that it's name match a certain regexp

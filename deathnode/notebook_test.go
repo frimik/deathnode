@@ -1,14 +1,15 @@
 package deathnode
 
 import (
+	"testing"
+	"time"
+
 	"github.com/alanbover/deathnode/aws"
 	"github.com/alanbover/deathnode/context"
 	"github.com/alanbover/deathnode/mesos"
 	"github.com/alanbover/deathnode/monitor"
 	"github.com/benbjohnson/clock"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
-	"time"
 )
 
 func TestRecordLifecycleActionHeartbeat(t *testing.T) {
@@ -194,15 +195,18 @@ func newNotebook(awsConn aws.ClientInterface, mesosConn mesos.ClientInterface, d
 			ProtectedTasksLabels:     []string{"task1"},
 			DelayDeleteSeconds:       delayDeleteSeconds,
 			ResetLifecycle:           true,
+			LifecycleTimeout:         3600,
 		},
 	}
 
 	mesosMonitor := monitor.NewMesosMonitor(ctx)
 	mesosMonitor.Refresh()
 
+	auroraMonitor := monitor.NewAuroraMonitor(ctx)
+
 	autoscalingGroups := monitor.NewAutoscalingServiceMonitor(ctx)
 	autoscalingGroups.Refresh()
 
-	notebook := NewNotebook(ctx, autoscalingGroups, mesosMonitor)
+	notebook := NewNotebook(ctx, autoscalingGroups, mesosMonitor, auroraMonitor)
 	return notebook
 }
