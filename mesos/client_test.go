@@ -1,21 +1,20 @@
-package monitor
+package mesos_test
 
 import (
 	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/alanbover/deathnode/aurora"
-
+	"github.com/alanbover/deathnode/mesos"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestAuroraSetMaintenance(t *testing.T) {
+func TestSetMesosAgentsInMaintenance(t *testing.T) {
 	Convey("When generating the payload for a maintenance call", t, func() {
-		auroraConn := &aurora.ClientMock{
+		mesosConn := &mesos.ClientMock{
 			Records: map[string]*[]string{},
 		}
-		templateJSON := aurora.MaintenanceRequest{}
+		templateJSON := mesos.MaintenanceRequest{}
 		var testValues = []struct {
 			hosts map[string]string
 			num   int
@@ -26,10 +25,10 @@ func TestAuroraSetMaintenance(t *testing.T) {
 		}
 
 		for _, testValue := range testValues {
-			Convey(fmt.Sprintf("it should be possible to start maintenance for %v agents", testValue.num), func() {
-				template := auroraConn.GenMaintenanceCallPayload(testValue.hosts)
+			Convey(fmt.Sprintf("it should be possible to configure for %v agents", testValue.num), func() {
+				template := mesosConn.GenMaintenanceCallPayload(testValue.hosts)
 				json.Unmarshal(template, &templateJSON)
-				So(len(templateJSON.MaintenanceHosts.HostNames), ShouldEqual, testValue.num)
+				So(len(templateJSON.Windows[0].MachinesIds), ShouldEqual, testValue.num)
 			})
 		}
 	})

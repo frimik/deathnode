@@ -15,8 +15,18 @@ test:
 	go test $$(go list ./... | grep -v /vendor/)
 
 cover:
-	go test -cover $$(go list ./... | grep -v /vendor/)
+	go test -cover $$(go list ./... | grep -v /vendor/) $(COVER_ARGS)
 
+cover_coverage: COVER_ARGS = -coverprofile=coverage.out
+cover_coverage: cover
+
+cover_html: cover_coverage
+cover_html: cover
+	go tool cover -html=coverage.out
+
+cover_func: cover_coverage
+cover_func: cover
+	go tool cover -func=coverage.out
 
 clean:
 	rm -rf docker/dist
