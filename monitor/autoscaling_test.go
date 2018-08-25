@@ -1,11 +1,12 @@
 package monitor
 
 import (
+	"testing"
+
 	"github.com/alanbover/deathnode/aws"
 	"github.com/alanbover/deathnode/context"
 	"github.com/benbjohnson/clock"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestNewAutoscalingGroup(t *testing.T) {
@@ -211,6 +212,7 @@ func newTestAutoscalingMonitors(awsConn *aws.ConnectionMock) *AutoscalingService
 		Conf: context.ApplicationConf{
 			DeathNodeMark:            "DEATH_NODE_MARK",
 			AutoscalingGroupPrefixes: []string{"some-Autoscaling-Group"},
+			LifecycleTimeout:         3600,
 		},
 		Clock: clock.New(),
 	}

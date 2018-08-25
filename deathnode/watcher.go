@@ -12,9 +12,11 @@ import (
 type Watcher struct {
 	notebook                  *Notebook
 	mesosMonitor              *monitor.MesosMonitor
+	auroraMonitor             *monitor.AuroraMonitor
 	autoscalingServiceMonitor *monitor.AutoscalingServiceMonitor
 	constraints               []constraint
 	recommender               recommender
+	ctx                       *context.ApplicationContext
 }
 
 // NewWatcher returns a new Watcher object
@@ -22,6 +24,7 @@ func NewWatcher(ctx *context.ApplicationContext) *Watcher {
 
 	autoscalingServiceMonitor := monitor.NewAutoscalingServiceMonitor(ctx)
 	mesosMonitor := monitor.NewMesosMonitor(ctx)
+	auroraMonitor := monitor.NewAuroraMonitor(ctx)
 
 	constraints := []constraint{}
 	for _, constraint := range ctx.Conf.ConstraintsType {
@@ -38,11 +41,13 @@ func NewWatcher(ctx *context.ApplicationContext) *Watcher {
 	}
 
 	return &Watcher{
-		notebook:                  NewNotebook(ctx, autoscalingServiceMonitor, mesosMonitor),
+		notebook:                  NewNotebook(ctx, autoscalingServiceMonitor, mesosMonitor, auroraMonitor),
 		mesosMonitor:              mesosMonitor,
+		auroraMonitor:             auroraMonitor,
 		constraints:               constraints,
 		recommender:               recommender,
 		autoscalingServiceMonitor: autoscalingServiceMonitor,
+		ctx: ctx,
 	}
 }
 
@@ -51,7 +56,7 @@ func NewWatcher(ctx *context.ApplicationContext) *Watcher {
 func (y *Watcher) TagInstancesToBeRemoved(autoscalingMonitor *monitor.AutoscalingGroupMonitor) {
 
 	numUndesiredInstances := autoscalingMonitor.GetNumUndesiredInstances()
-	log.Debugf("Undesired Mesos Agents: %d", numUndesiredInstances)
+	log.WithField("autoscaling_group", autoscalingMonitor.GetAutoscalingGroupName()).Debugf("Undesired Mesos Agents: %d", numUndesiredInstances)
 
 	for removedInstances := 0; removedInstances < numUndesiredInstances; removedInstances++ {
 
@@ -86,6 +91,9 @@ func (y *Watcher) Run() {
 
 	y.autoscalingServiceMonitor.Refresh()
 	y.mesosMonitor.Refresh()
+	if y.ctx.Conf.AuroraURL != "" {
+		y.auroraMonitor.Refresh()
+	}
 
 	for _, autoscalingGroup := range y.autoscalingServiceMonitor.GetAutoscalingGroupMonitorsList() {
 		y.TagInstancesToBeRemoved(autoscalingGroup)

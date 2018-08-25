@@ -1,12 +1,13 @@
 package deathnode
 
 import (
+	"testing"
+
 	"github.com/alanbover/deathnode/aws"
 	"github.com/alanbover/deathnode/context"
 	"github.com/alanbover/deathnode/mesos"
 	"github.com/alanbover/deathnode/monitor"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestConstraints(t *testing.T) {
@@ -29,7 +30,7 @@ func TestConstraints(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 		Convey("if it's a noConstraintType, it just return all it's instances", func() {
-			constraint, _ := newConstraint("noContraint")
+			constraint, _ := newConstraint("noConstraint")
 			instances := constraint.filter(instanceMonitor.GetInstances(), mesosMonitor)
 			So(len(instanceMonitor.GetInstances()), ShouldEqual, len(instances))
 		})

@@ -2,11 +2,12 @@ package deathnode
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/alanbover/deathnode/aws"
 	"github.com/alanbover/deathnode/context"
 	"github.com/alanbover/deathnode/mesos"
 	"github.com/benbjohnson/clock"
-	"testing"
 )
 
 type testCollectionValues struct {
@@ -245,7 +246,7 @@ func newWatcher(testValues testCollectionValues) *Watcher {
 			ProtectedFrameworks:      []string{"frameworkName1"},
 			ProtectedTasksLabels:     []string{"DEATHNODE_PROTECTED"},
 			DelayDeleteSeconds:       testValues.delayDeleteSeconds,
-			ConstraintsType:          []string{"noContraint", "noContraint"},
+			ConstraintsType:          []string{"noConstraint", "noConstraint"},
 			RecommenderType:          "smallestInstanceId",
 		},
 	}
