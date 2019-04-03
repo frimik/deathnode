@@ -249,7 +249,7 @@ func (a *AutoscalingGroupMonitor) newInstance(instance *autoscaling.Instance) er
 
 	log.WithFields(log.Fields{
 		"autoscaling_group": a.autoscalingGroupName,
-		"instance":          *instance.InstanceId,
+		"instance_id":       *instance.InstanceId,
 	}).Debugf("Found new instance to monitor")
 
 	instanceMonitor, err := newInstanceMonitor(

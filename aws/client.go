@@ -4,10 +4,11 @@ package aws
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"strings"
 )
 
 const (
@@ -34,6 +35,7 @@ type ClientInterface interface {
 	PutLifeCycleHook(autoscalingGroupName string, heartbeatTimeout *int64) error
 	CompleteLifecycleAction(autoscalingGroupName, instanceID *string) error
 	RecordLifecycleActionHeartbeat(autoscalingGroupName, instanceID *string) error
+	TerminateInstance(instanceID string) error
 }
 
 // NewClient returns a new aws.client
@@ -279,6 +281,20 @@ func (c *Client) SetInstanceTag(key, value, instanceID string) error {
 		Resources: []*string{aws.String(instanceID)},
 		Tags:      []*ec2.Tag{tag},
 	})
+
+	return err
+}
+
+// TerminateInstance terminates an AWS instance
+func (c *Client) TerminateInstance(instanceID string) error {
+
+	instanceIds := []*string{&instanceID}
+
+	TerminateInstancesInput := &ec2.TerminateInstancesInput{
+		InstanceIds: instanceIds,
+	}
+
+	_, err := c.ec2.TerminateInstances(TerminateInstancesInput)
 
 	return err
 }

@@ -3,11 +3,12 @@ package aws
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/autoscaling"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/aws/aws-sdk-go/service/autoscaling"
+	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
 // ConnectionMock is a aws mock client for testing purposes
@@ -26,6 +27,16 @@ func (c *ConnectionMock) DescribeInstanceByID(instanceID string) (*ec2.Instance,
 
 	mockResponse, _ := c.replay(&ec2.Instance{}, "DescribeInstanceById")
 	return mockResponse.(*ec2.Instance), nil
+}
+
+// TerminateInstance mock call for testing purposes
+func (c *ConnectionMock) TerminateInstance(instanceID string) error {
+	if c.Requests == nil {
+		c.Requests = map[string][][]string{}
+	}
+
+	c.Requests["TerminateInstance"] = append(c.Requests["TerminateInstance"], []string{instanceID})
+	return nil
 }
 
 // DescribeInstancesByTag is a mock call for testing purposes

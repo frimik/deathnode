@@ -12,6 +12,7 @@ import (
 // LifecycleStateTerminatingWait defines the state of an instance in the autoscalingGroup when it's waiting for
 // confirmation to be removed
 const LifecycleStateTerminatingWait = "Terminating:Wait"
+const LifecycleStateInService = "InService"
 
 // InstanceMonitor monitors an AWS instance
 type InstanceMonitor struct {
@@ -37,6 +38,13 @@ func newInstanceMonitor(ctx *context.ApplicationContext, autoscalingGroupID, ins
 	tagRemovalTimestamp, err := getTagRemovalTimestamp(response.Tags, ctx.Conf.DeathNodeMark)
 	if err != nil {
 		log.Warn("Invalid value found for tag %s on instance %s", ctx.Conf.DeathNodeMark, instanceID)
+	}
+
+	if lifecycleState != LifecycleStateInService {
+		log.WithFields(log.Fields{
+			"instance_id": instanceID,
+		}).Warnf("Ignoring instance because it's not %s", LifecycleStateInService)
+		return &InstanceMonitor{}, nil
 	}
 
 	return &InstanceMonitor{
@@ -97,6 +105,12 @@ func (a *InstanceMonitor) TagToBeRemoved() error {
 	currentTimestamp := a.ctx.Clock.Now().Unix()
 	err := a.ctx.AwsConn.SetInstanceTag(a.ctx.Conf.DeathNodeMark, fmt.Sprintf("%v", currentTimestamp), a.instanceID)
 	a.tagRemovalTimestamp = currentTimestamp
+	return err
+}
+
+// TerminateInstance terminates an EC2 instance.
+func (a *InstanceMonitor) TerminateInstance() error {
+	err := a.ctx.AwsConn.TerminateInstance(a.instanceID)
 	return err
 }
 

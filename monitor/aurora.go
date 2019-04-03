@@ -63,7 +63,7 @@ func (a *AuroraMonitor) DrainHosts(hosts map[string]string) error {
 	}
 	log.WithFields(log.Fields{
 		"hosts": drainHosts,
-	}).Info("Draining...")
+	}).Debug("Draining...")
 
 	return a.ctx.AuroraConn.DrainHosts(drainHosts)
 }
@@ -77,7 +77,7 @@ func (a *AuroraMonitor) StartMaintenance(hosts map[string]string) error {
 		if !a.IsDrained(ip) && !a.IsDraining(ip) && !a.isScheduled(ip) {
 			maintenanceHosts[dnsName] = ip
 			log.WithFields(log.Fields{
-				"host": ip,
+				"ip": ip,
 			}).Info("StartMaintenance: Will put host into SCHEDULED maintenance mode.")
 		}
 	}

@@ -81,6 +81,11 @@ func (n *Notebook) shouldWaitForNextDestroy() bool {
 
 func (n *Notebook) destroyInstance(instanceMonitor *monitor.InstanceMonitor) error {
 
+	log.WithFields(log.Fields{
+		"instance_id": *instanceMonitor.InstanceID(),
+		"ip":          instanceMonitor.IP(),
+	}).Debugf("lifecycle state for instance is %s", instanceMonitor.LifecycleState())
+
 	if instanceMonitor.LifecycleState() == monitor.LifecycleStateTerminatingWait {
 		// ensure we end maintenance for this instance after it's been destroyed.
 		// TODO generalize it so it chooses Mesos/Aurora like SetAgentsInMaintenance() does.
@@ -98,6 +103,24 @@ func (n *Notebook) destroyInstance(instanceMonitor *monitor.InstanceMonitor) err
 		if n.ctx.Conf.DelayDeleteSeconds != 0 {
 			n.lastDeleteTimestamp = n.ctx.Clock.Now()
 		}
+	} else if instanceMonitor.LifecycleState() == monitor.LifecycleStateInService {
+		// Check if timeout is close to expire
+		startTimeoutTimestamp := time.Unix(instanceMonitor.TagRemovalTimestamp(), 0)
+		maxSecondsToRefresh := float64(n.ctx.Conf.LifecycleTimeout) * monitor.LifeCycleRefreshTimeoutPercentage
+
+		if n.ctx.Clock.Since(startTimeoutTimestamp).Seconds() > maxSecondsToRefresh {
+
+			if n.ctx.Conf.AuroraURL != "" {
+				defer n.endMaintenance(instanceMonitor)
+			}
+
+			// terminate instance here. It's obviously been stuck long enough as a deathmarked node.
+			log.Infof("Instance has been stuck for a long time. Will terminate it.")
+			if err := n.terminateInstance(instanceMonitor); err != nil {
+				return err
+			}
+		}
+
 	} else {
 		log.Debugf("Instance %s waiting for AWS to start termination lifecycle", *instanceMonitor.InstanceID())
 	}
@@ -198,6 +221,23 @@ func (n *Notebook) removeInstanceProtection(instance *monitor.InstanceMonitor) e
 
 	if instance.IsProtected() {
 		return instance.RemoveInstanceProtection()
+	}
+
+	return nil
+}
+
+func (n *Notebook) terminateInstance(instance *monitor.InstanceMonitor) error {
+	if !instance.IsProtected() {
+		log.WithFields(log.Fields{
+			"instance_id": *instance.InstanceID(),
+		}).Debug("Terminating instance.")
+
+		return instance.TerminateInstance()
+
+	} else {
+		log.WithFields(log.Fields{
+			"instance_id": *instance.InstanceID(),
+		}).Warn("Instance has termination protection enabled.")
 	}
 
 	return nil
